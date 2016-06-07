@@ -9,18 +9,29 @@ import java.util.*;
  */
 public abstract class BMSTable<T> {
 	
+	private Map<String, Object> values = new HashMap<String, Object>();
+
 	/**
-	 * 票の名称
+	 * 表の名称
 	 */
-	private String name = "";
+	public static final String NAME = "name";
 	/**
 	 * 難易度表のマーク
-	 */
-	private String id = "";
+	 */	
+	public static final String SYMBOL = "symbol";
 	/**
 	 * 難易度表のタグ付加時のマーク
+	 */	
+	public static final String TAG = "tag";
+	/**
+	 * 難易度表のデータURL
 	 */
-	private String tag = "";
+	public static final String DATA_URL = "data_url";
+	/**
+	 * 表固有の属性値-名称のマップ
+	 */
+	public static final String ATTR = "attr";
+	
 	/**
 	 * 難易度表のソースURL
 	 */
@@ -46,10 +57,6 @@ public abstract class BMSTable<T> {
 	 */
 	private long lastupdate = 0;
 	/**
-	 * 表固有の属性値-名称のマップ
-	 */
-	private Map<String, String> attrmap = new HashMap<String, String>();
-	/**
 	 * 表の要素
 	 */
 	private List<T> models = new ArrayList<T>();
@@ -61,19 +68,19 @@ public abstract class BMSTable<T> {
 	private int accessCount = 0;
 	
 	public String getName() {
-		return name;
+		return (String)values.get(NAME);
 	}
 
 	public void setName(String name) {
-		this.name = name;
+		values.put(NAME, name);
 	}
 
 	public String getID() {
-		return id;
+		return (String)values.get(SYMBOL);
 	}
 
 	public void setID(String id) {
-		this.id = id;
+		values.put(SYMBOL, id);
 	}
 
 	public String[] getDataURL() {
@@ -95,11 +102,14 @@ public abstract class BMSTable<T> {
 
 
 	public String getTag() {
-		return tag;
+		if(values.containsKey(TAG)) {
+			return (String)values.get(TAG);
+		}
+		return getID();
 	}
 
 	public void setTag(String tag) {
-		this.tag = tag;
+		values.put(TAG, tag);
 	}
 
 	public String getSourceURL() {
@@ -141,11 +151,14 @@ public abstract class BMSTable<T> {
 	}
 
 	public Map<String, String> getAttrmap() {
-		return attrmap;
+		if(values.containsKey(ATTR)) {
+			return (Map<String, String>) values.get(ATTR);
+		}
+		return new HashMap<String, String>();
 	}
 
 	public void setAttrmap(Map<String, String> attrmap) {
-		this.attrmap = attrmap;
+		values.put(ATTR, attrmap);
 	}
 
 	public String getHeadURL() {
@@ -174,5 +187,14 @@ public abstract class BMSTable<T> {
 
 	public void setAutoUpdate(boolean autoupdate) {
 		this.autoUpdate = autoupdate;
+	}
+	
+	public Map<String, Object> getValues() {
+		return values;
+	}
+
+	public void setValues(Map<String, Object> values) {
+		this.values.clear();
+		this.values.putAll(values);
 	}
 }

@@ -3,16 +3,12 @@ package bms.table;
 import java.io.Serializable;
 import java.util.*;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
-
 /**
  * 難易度表
  * 
  * @author exch
  */
-public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
-		Serializable {
+public class DifficultyTable extends BMSTable<DifficultyTableElement> implements Serializable {
 
 	/**
 	 * 
@@ -21,12 +17,12 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 	/**
 	 * レベル表記
 	 */
-	private String[] levelDescription = new String[0];
+	public static final String LEVEL_ORDER = "level_order";
 	/**
-	 * 段位
+	 * コース定義
 	 */
-	private Grade[] grade = new Grade[0];
-	
+	private Course[][] course = new Course[0][0];
+
 	public DifficultyTable() {
 		super();
 	}
@@ -37,14 +33,12 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 	}
 
 	public DifficultyTableElement[] getElements() {
-		DifficultyTableElement[] dte = this.getModels().toArray(
-				new DifficultyTableElement[0]);
+		DifficultyTableElement[] dte = this.getModels().toArray(new DifficultyTableElement[0]);
 		Comparator asc = new Comparator() {
 			public int compare(Object o1, Object o2) {
 				DifficultyTableElement dte1 = (DifficultyTableElement) o1;
 				DifficultyTableElement dte2 = (DifficultyTableElement) o2;
-				int c = indexOf(dte1.getDifficultyID())
-						- indexOf(dte2.getDifficultyID());
+				int c = indexOf(dte1.getDifficultyID()) - indexOf(dte2.getDifficultyID());
 				if (c == 0) {
 					return dte1.getTitle().compareToIgnoreCase(dte2.getTitle());
 				}
@@ -56,8 +50,8 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 	}
 
 	private int indexOf(String level) {
-		for (int i = 0; i < levelDescription.length; i++) {
-			if (levelDescription[i].equals(level)) {
+		for (int i = 0; i < getLevelDescription().length; i++) {
+			if (getLevelDescription()[i].equals(level)) {
 				return i;
 			}
 		}
@@ -65,70 +59,26 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 	}
 
 	public String[] getLevelDescription() {
-		return levelDescription;
+		List l = (List) this.getValues().get(LEVEL_ORDER);
+		if (l != null) {
+			String[] levels = new String[l.size()];
+			for (int i = 0; i < levels.length; i++) {
+				levels[i] = l.get(i).toString();
+			}
+			return levels;
+		}
+		return new String[] {};
 	}
 
 	public void setLevelDescription(String[] levelDescription) {
-		this.levelDescription = levelDescription;
-	}
-	
-	public Grade[] getGrade() {
-		return grade;
+		this.getValues().put(LEVEL_ORDER, Arrays.asList(levelDescription));
 	}
 
-	public void setGrade(Grade[] grade) {
-		this.grade = grade;
+	public Course[][] getCourse() {
+		return course;
 	}
 
-	/**
-	 * 段位
-	 * 
-	 * @author exch
-	 */
-	public static class Grade {
-		/**
-		 * 段位名
-		 */
-		private StringProperty name = new SimpleStringProperty("新規段位");
-		/**
-		 * 段位を構成する譜面のMD5
-		 */
-		private String[] hashes = new String[0];
-		/**
-		 * 段位名のスタイル
-		 */
-		private StringProperty style =  new SimpleStringProperty("");
-		
-		public String getName() {
-			return name.get();
-		}
-		
-		public void setName(String name) {
-			this.name.set(name);
-		}
-		
-		public StringProperty nameProperty() {
-			return name;
-		}
-		
-		public String[] getHashes() {
-			return hashes;
-		}
-		
-		public void setHashes(String[] hashes) {
-			this.hashes = hashes;
-		}
-		
-		public String getStyle() {
-			return style.get();
-		}
-		
-		public void setStyle(String style) {
-			this.style.set(style);
-		}
-		
-		public StringProperty styleProperty() {
-			return style;
-		}
- 	}
+	public void setCourse(Course[][] course) {
+		this.course = course;
+	}
 }

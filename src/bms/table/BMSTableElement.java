@@ -14,25 +14,25 @@ public abstract class BMSTableElement {
 	/**
 	 * タイトル
 	 */
-	private String title = "";
-	/**
-	 * MD5
-	 */
-	private String md5 = "";
+	public static final String TITLE = "title";
 	/**
 	 * アーティスト
 	 */
-	private String artist = "";
+	public static final String ARTIST = "artist";
+	/**
+	 * MD5
+	 */
+	public static final String MD5 = "md5";
 	
 	public BMSTableElement() {
 	}
 	
 	public String getTitle() {
-		return title;
+		return (String) values.get(TITLE);
 	}
 
 	public void setTitle(String title) {
-		this.title = title;
+		values.put(TITLE, title);
 	}
 	
 	public String getURL1() {
@@ -44,19 +44,19 @@ public abstract class BMSTableElement {
 	}
 
 	public String getURL1name() {
-		return artist;
+		return (String) values.get(ARTIST);
 	}
 
 	public void setURL1name(String url1name) {
-		this.artist = url1name;
+		values.put(ARTIST, url1name);
 	}
 
 	public String getHash() {
-		return md5;
+		return (String) values.get(MD5);
 	}
 
 	public void setHash(String hash) {
-		this.md5 = hash;
+		values.put(MD5, hash);
 	}
 
 	public List<String> getParentHash() {
@@ -81,16 +81,11 @@ public abstract class BMSTableElement {
 	}
 	
 	public Map<String, Object> getValues() {
-		values.put("title", getTitle());
-		values.put("md5", getHash());
-		values.put("artist", getURL1name());
 		return values;
 	}
 
 	public void setValues(Map<String, Object> values) {
-		this.values = values;
-		title = (String) values.get("title");
-		md5 = (String) values.get("md5");
-		artist= (String) values.get("artist");
+		this.values.clear();
+		this.values.putAll(values);
 	}	
 }
