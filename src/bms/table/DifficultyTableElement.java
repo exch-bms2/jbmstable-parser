@@ -75,7 +75,7 @@ public class DifficultyTableElement extends BMSTableElement implements
 		this.setURL1(url1);
 		this.setURL2(url2);
 		this.setComment1(comment);
-		this.setHash(hash);
+		this.setMD5(hash);
 	}
 	
 	public int getState() {

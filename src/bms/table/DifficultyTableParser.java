@@ -175,7 +175,8 @@ public class DifficultyTableParser {
 					if (conf.get(dte.getDifficultyID()) == null || conf.get(dte.getDifficultyID()).length() > 0) {
 						boolean contains = false;
 						for (DifficultyTableElement dte2 : elements) {
-							if (dte.getHash().equals(dte2.getHash())) {
+							if ((dte.getMD5() != null && dte.getMD5().equals(dte2.getMD5()) || (dte.getSHA256() != null && dte
+									.getSHA256().equals(dte2.getSHA256())))) {
 								contains = true;
 								break;
 							}
@@ -256,43 +257,45 @@ public class DifficultyTableParser {
 		dt.setMergeConfigurations(mergerule);
 		List<Course[]> courses = new ArrayList();
 		if (result.get("course") != null) {
-			List<Map<String, Object>> course = new ArrayList<Map<String, Object>>();
-			if (result.get("course") instanceof List) {
-				course = (List<Map<String, Object>>) result.get("course");
+			List<List<Map<String, Object>>> courselist = new ArrayList<List<Map<String, Object>>>();
+			if (((List) result.get("course")).get(0) instanceof List) {
+				courselist = (List<List<Map<String, Object>>>) result.get("course");
 			}
-			if (result.get("course") instanceof Map) {
-				course.add((Map<String, Object>) result.get("course"));
+			if (((List) result.get("course")).get(0) instanceof Map) {
+				courselist.add((List<Map<String, Object>>) result.get("course"));
 			}
-			List<Course> l = new ArrayList<Course>();
-			for (Map<String, Object> grade : course) {
-				Course gr = new Course();
-				gr.setName((String) grade.get("name"));
-				gr.setHash(((List<String>) grade.get("md5")).toArray(new String[0]));
-				gr.setStyle((String) grade.get("style"));
-				gr.setConstraint(((List<String>) grade.get("constraint")).toArray(new String[0]));
-				if(grade.get("trophy") != null) {
-					List<Trophy> trophy = new ArrayList();
-					for(Map<String, Object> tr : (List<Map<String, Object>>)grade.get("trophy")) {
-						Trophy t = new Trophy();
-						t.setName((String) tr.get("name"));
-						t.setMissrate((double) tr.get("missrate"));
-						t.setScorerate((double) tr.get("scorerate"));
-						t.setStyle((String) tr.get("style"));
-						trophy.add(t);
+			for (List<Map<String, Object>> course : courselist) {
+				List<Course> l = new ArrayList<Course>();
+				for (Map<String, Object> grade : course) {
+					Course gr = new Course();
+					gr.setName((String) grade.get("name"));
+					gr.setHash(((List<String>) grade.get("md5")).toArray(new String[0]));
+					gr.setStyle((String) grade.get("style"));
+					gr.setConstraint(((List<String>) grade.get("constraint")).toArray(new String[0]));
+					if (grade.get("trophy") != null) {
+						List<Trophy> trophy = new ArrayList();
+						for (Map<String, Object> tr : (List<Map<String, Object>>) grade.get("trophy")) {
+							Trophy t = new Trophy();
+							t.setName((String) tr.get("name"));
+							t.setMissrate((double) tr.get("missrate"));
+							t.setScorerate((double) tr.get("scorerate"));
+							t.setStyle((String) tr.get("style"));
+							trophy.add(t);
+						}
+						gr.setTrophy(trophy.toArray(new Trophy[0]));
 					}
-					gr.setTrophy(trophy.toArray(new Trophy[0]));
+					l.add(gr);
 				}
-				l.add(gr);
+				courses.add(l.toArray(new Course[0]));
 			}
-			courses.add(l.toArray(new Course[0]));
 		} else if (result.get("grade") != null) {
-			List<Course> l = new ArrayList<Course>();			
+			List<Course> l = new ArrayList<Course>();
 			for (Map<String, Object> grade : (List<Map<String, Object>>) result.get("grade")) {
 				Course gr = new Course();
 				gr.setName((String) grade.get("name"));
 				gr.setHash(((List<String>) grade.get("md5")).toArray(new String[0]));
 				gr.setStyle((String) grade.get("style"));
-				gr.setConstraint(new String[]{"grade_mirror"});
+				gr.setConstraint(new String[] { "grade_mirror" });
 				l.add(gr);
 			}
 			courses.add(l.toArray(new Course[0]));
@@ -342,8 +345,10 @@ public class DifficultyTableParser {
 		List<String> levelorder = new ArrayList<String>();
 		for (int i = 0; i < result.size(); i++) {
 			Map<String, Object> m = result.get(i);
-			// levelとmd5が定義されていない要素は弾く
-			if (accept || (m.get("level") != null && m.get("md5") != null && m.get("md5").toString().length() > 24)) {
+			// levelとmd5(sha256)が定義されていない要素は弾く
+			if (accept
+					|| (m.get("level") != null && ((m.get("md5") != null && m.get("md5").toString().length() > 24) || (m
+							.get("sha256") != null && m.get("sha256").toString().length() > 24)))) {
 				DifficultyTableElement dte = new DifficultyTableElement();
 				dte.setValues(m);
 

@@ -23,6 +23,10 @@ public abstract class BMSTableElement {
 	 * MD5
 	 */
 	public static final String MD5 = "md5";
+	/**
+	 * SHA256
+	 */
+	public static final String SHA256 = "sha256";
 	
 	public BMSTableElement() {
 	}
@@ -51,12 +55,20 @@ public abstract class BMSTableElement {
 		values.put(ARTIST, url1name);
 	}
 
-	public String getHash() {
+	public String getMD5() {
 		return (String) values.get(MD5);
 	}
 
-	public void setHash(String hash) {
+	public void setMD5(String hash) {
 		values.put(MD5, hash);
+	}
+
+	public String getSHA256() {
+		return (String) values.get(SHA256);
+	}
+
+	public void setSHA256(String hash) {
+		values.put(SHA256, hash);
 	}
 
 	public List<String> getParentHash() {
