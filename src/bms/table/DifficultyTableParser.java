@@ -6,14 +6,10 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
-
 import bms.table.Course.Trophy;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
  * 難易度表パーサ
@@ -27,7 +23,7 @@ public class DifficultyTableParser {
 	/**
 	 * 難易度表データ
 	 */
-	private Map<String, byte[]> data = new HashMap<String, byte[]>();
+	private Map<String, String[]> data = new HashMap<String, String[]>();
 
 	public DifficultyTableParser() {
 	}
@@ -50,23 +46,34 @@ public class DifficultyTableParser {
 		return getMetaTag(urlname, "bmstable-alt");
 	}
 
-	private String getMetaTag(String urlname, String name) {
-		try {
-			if (data.get(urlname) == null) {
-				data.put(urlname, IOUtils.toByteArray(new URL(urlname)));
+	private String[] readAllLines(String urlname) {
+		String[] result = null;
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(new URL(urlname).openStream()))) {
+			List<String> l = new ArrayList();
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				l.add(line);
 			}
-			LineIterator li = IOUtils.lineIterator(new InputStreamReader(new ByteArrayInputStream(data.get(urlname))));
-			while (li.hasNext()) {
-				// 難易度表ヘッダ
-				String line = li.nextLine();
-				if (line.toLowerCase().contains("<meta name=\"" + name + "\"")) {
-					Pattern p = Pattern.compile("\"");
-					return p.split(line)[3];
-				}
-			}
-			li.close();
+			result = l.toArray(new String[l.size()]);
 		} catch (IOException e) {
 			Logger.getGlobal().severe("難易度表サイト解析中の例外:" + e.getMessage());
+		}
+		return result;
+	}
+
+	private String getMetaTag(String urlname, String name) {
+		if (data.get(urlname) == null) {
+			data.put(urlname, readAllLines(urlname));
+		}
+		if (data.get(urlname) == null) {
+			return null;
+		}
+		for (String line : data.get(urlname)) {
+			// 難易度表ヘッダ
+			if (line.toLowerCase().contains("<meta name=\"" + name + "\"")) {
+				Pattern p = Pattern.compile("\"");
+				return p.split(line)[3];
+			}
 		}
 		return null;
 	}
@@ -88,12 +95,13 @@ public class DifficultyTableParser {
 			tableurl = diff.getHeadURL();
 		} else {
 			if (data.get(urlname) == null) {
-				data.put(urlname, IOUtils.toByteArray(new URL(urlname)));
+				data.put(urlname, readAllLines(urlname));
 			}
-			LineIterator li = IOUtils.lineIterator(new InputStreamReader(new ByteArrayInputStream(data.get(urlname))));
+			if (data.get(urlname) == null) {
+				throw new IOException();
+			}
 			Pattern p = Pattern.compile("\"");
-			while (li.hasNext()) {
-				String line = li.nextLine();
+			for (String line : data.get(urlname)) {
 				// 文字エンコード
 				if (line.toLowerCase().contains("<meta http-equiv=\"content-type\"")) {
 					String str = p.split(line)[3];
@@ -104,7 +112,6 @@ public class DifficultyTableParser {
 					tableurl = p.split(line)[3];
 				}
 			}
-			li.close();
 		}
 		// 難易度表ヘッダ(JSON)がある場合
 		if (tableurl != null) {
@@ -122,8 +129,9 @@ public class DifficultyTableParser {
 				if (enc.toUpperCase().equals("SHIFT_JIS")) {
 					enc = "Shift_JIS";
 				}
-				this.parseDifficultyTable(diff, diff.getID(),
-						new InputStreamReader(new ByteArrayInputStream(data.get(urlname)), enc), b);
+				// this.parseDifficultyTable(diff, diff.getID(),
+				// new InputStreamReader(new
+				// ByteArrayInputStream(data.get(urlname)), enc), b);
 			}
 		}
 	}
@@ -148,8 +156,7 @@ public class DifficultyTableParser {
 	 * @param saveElements
 	 *            譜面データも取り込むかどうか。設定項目のみを取り出したい場合はfalseとする
 	 */
-	public void decodeJSONTable(DifficultyTable dt, URL jsonheader, boolean saveElements) throws JsonParseException,
-			JsonMappingException, IOException {
+	public void decodeJSONTable(DifficultyTable dt, URL jsonheader, boolean saveElements) throws IOException {
 		// 難易度表ヘッダ(JSON)読み込み
 		this.decodeJSONTableHeader(dt, jsonheader);
 		String[] urls = dt.getDataURL();
@@ -175,8 +182,9 @@ public class DifficultyTableParser {
 					if (conf.get(dte.getDifficultyID()) == null || conf.get(dte.getDifficultyID()).length() > 0) {
 						boolean contains = false;
 						for (DifficultyTableElement dte2 : elements) {
-							if ((dte.getMD5() != null && dte.getMD5().equals(dte2.getMD5()) || (dte.getSHA256() != null && dte
-									.getSHA256().equals(dte2.getSHA256())))) {
+							if ((dte.getMD5() != null && dte.getMD5().length() > 10
+									&& dte.getMD5().equals(dte2.getMD5()) || (dte.getSHA256() != null
+									&& dte.getSHA256().length() > 10 && dte.getSHA256().equals(dte2.getSHA256())))) {
 								contains = true;
 								break;
 							}
@@ -208,8 +216,7 @@ public class DifficultyTableParser {
 	 * @throws JsonMappingException
 	 * @throws IOException
 	 */
-	public void decodeJSONTableHeader(DifficultyTable dt, File jsonheader) throws JsonParseException,
-			JsonMappingException, IOException {
+	public void decodeJSONTableHeader(DifficultyTable dt, File jsonheader) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		this.decodeJSONTableHeader(dt, mapper.readValue(jsonheader, Map.class));
 	}
@@ -225,15 +232,13 @@ public class DifficultyTableParser {
 	 * @throws JsonMappingException
 	 * @throws IOException
 	 */
-	public void decodeJSONTableHeader(DifficultyTable dt, URL jsonheader) throws JsonParseException,
-			JsonMappingException, IOException {
+	public void decodeJSONTableHeader(DifficultyTable dt, URL jsonheader) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		this.decodeJSONTableHeader(dt, mapper.readValue(jsonheader, Map.class));
 		dt.setHeadURL(jsonheader.toExternalForm());
 	}
 
-	private DifficultyTable decodeJSONTableHeader(DifficultyTable dt, Map<String, Object> result)
-			throws JsonParseException {
+	private DifficultyTable decodeJSONTableHeader(DifficultyTable dt, Map<String, Object> result) throws IOException {
 		dt.setValues(result);
 		// level_order処理
 		Object dataurl = result.get("data_url");
@@ -303,7 +308,7 @@ public class DifficultyTableParser {
 		dt.setCourse(courses.toArray(new Course[0][]));
 		// 必須項目が定義されていない場合は例外をスロー
 		if (result.get("name") == null || result.get("symbol") == null) {
-			throw new JsonParseException("ヘッダ部の情報が不足しています", null);
+			throw new IOException("ヘッダ部の情報が不足しています", null);
 		}
 		return dt;
 	}
@@ -316,8 +321,7 @@ public class DifficultyTableParser {
 	 * @param jsondata
 	 *            難易度表JSONデータファイル
 	 */
-	public void decodeJSONTableData(DifficultyTable dt, File jsondata) throws JsonParseException, JsonMappingException,
-			IOException {
+	public void decodeJSONTableData(DifficultyTable dt, File jsondata) throws IOException {
 		// JSON読み込み
 		ObjectMapper mapper = new ObjectMapper();
 		this.decodeJSONTableData(dt, mapper.readValue(jsondata, List.class), true);
@@ -331,8 +335,7 @@ public class DifficultyTableParser {
 	 * @param jsondata
 	 *            難易度表JSONデータURL
 	 */
-	public void decodeJSONTableData(DifficultyTable dt, URL jsondata) throws JsonParseException, JsonMappingException,
-			IOException {
+	public void decodeJSONTableData(DifficultyTable dt, URL jsondata) throws IOException {
 		Logger.getGlobal().info("難易度表データ読み込み - " + jsondata.toExternalForm());
 		// JSON読み込み
 		ObjectMapper mapper = new ObjectMapper();
@@ -443,6 +446,7 @@ public class DifficultyTableParser {
 				datas.add(te.getValues());
 			}
 			ObjectMapper objectMapper = new ObjectMapper();
+			objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 			String json = objectMapper.writeValueAsString(datas);
 			OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(jsondata), "UTF-8");
 			osw.write(json);
