@@ -179,7 +179,7 @@ public class DifficultyTableParser {
 				levels.addAll(Arrays.asList(table.getLevelDescription()));
 				// 重複BMSの処理
 				for (DifficultyTableElement dte : table.getElements()) {
-					if (conf.get(dte.getDifficultyID()) == null || conf.get(dte.getDifficultyID()).length() > 0) {
+					if (conf.get(dte.getLevel()) == null || conf.get(dte.getLevel()).length() > 0) {
 						boolean contains = false;
 						for (DifficultyTableElement dte2 : elements) {
 							if ((dte.getMD5() != null && dte.getMD5().length() > 10
@@ -190,8 +190,8 @@ public class DifficultyTableParser {
 							}
 						}
 						if (!contains) {
-							if (conf.get(dte.getDifficultyID()) != null) {
-								dte.setDifficultyID(conf.get(dte.getDifficultyID()));
+							if (conf.get(dte.getLevel()) != null) {
+								dte.setLevel(conf.get(dte.getLevel()));
 							}
 							elements.add(dte);
 						}
@@ -497,7 +497,7 @@ public class DifficultyTableParser {
 				dte = new DifficultyTableElement();
 				String did = p.split(line)[1].substring(mark.length());
 				// dte.setID(p.split(line)[0].replaceAll("[\\[\\s,]", ""));
-				dte.setDifficultyID(did);
+				dte.setLevel(did);
 				state = 0;
 			}
 
@@ -520,18 +520,18 @@ public class DifficultyTableParser {
 					// URL1
 					String[] split = p.split(line)[1].split("'");
 					if (split.length > 2) {
-						dte.setURL1(split[1]);
+						dte.setURL(split[1]);
 					}
 					split = p.split(line)[1].split("<[bB][rR]\\s*/*>");
-					dte.setURL1name(split[0].replaceFirst("<[aA]\\s[hH][rR][eE][fF]=.+'>|</[aA]>", "").replaceFirst(
+					dte.setArtist(split[0].replaceFirst("<[aA]\\s[hH][rR][eE][fF]=.+'>|</[aA]>", "").replaceFirst(
 							"</[aA]>", ""));
 					// URL1サブ
 					if (split.length > 1) {
 						String[] split2 = split[1].split("'");
 						if (split2.length > 2) {
-							dte.setURL1sub(split2[1]);
+							dte.setPackageURL(split2[1]);
 						}
-						dte.setURL1subname(split[1].replaceFirst("<[aA]\\s[hH][rR][eE][fF]=.+'>|</[aA]>", "")
+						dte.setPackageName(split[1].replaceFirst("<[aA]\\s[hH][rR][eE][fF]=.+'>|</[aA]>", "")
 								.replaceFirst("</[aA]>", ""));
 					}
 					state++;
@@ -540,15 +540,15 @@ public class DifficultyTableParser {
 					// URL2
 					String[] split3 = p.split(line)[1].split("'");
 					if (split3.length > 2) {
-						dte.setURL2(split3[1]);
+						dte.setAppendURL(split3[1]);
 					}
-					dte.setURL2name(p.split(line)[1].replaceFirst("<[aA]\\s[hH][rR][eE][fF]=.+'>|</[aA]>", "")
+					dte.setAppendArtist(p.split(line)[1].replaceFirst("<[aA]\\s[hH][rR][eE][fF]=.+'>|</[aA]>", "")
 							.replaceFirst("</[aA]>", ""));
 					state++;
 					break;
 				case 5:
 					// コメント
-					dte.setComment1(p.split(line)[1].replaceFirst("Avg:.*JUDGE:[A-Z]+\\s*", ""));
+					dte.setComment(p.split(line)[1].replaceFirst("Avg:.*JUDGE:[A-Z]+\\s*", ""));
 					result.add(dte);
 					dte = null;
 					state = -1;
@@ -566,12 +566,12 @@ public class DifficultyTableParser {
 			for (int i = 0; i < result.size(); i++) {
 				boolean b = true;
 				for (int j = 0; j < l.size(); j++) {
-					if (l.get(j).equals(result.get(i).getDifficultyID())) {
+					if (l.get(j).equals(result.get(i).getLevel())) {
 						b = false;
 					}
 				}
 				if (b) {
-					l.add(result.get(i).getDifficultyID());
+					l.add(result.get(i).getLevel());
 				}
 			}
 			dt.setLevelDescription(l.toArray(new String[0]));

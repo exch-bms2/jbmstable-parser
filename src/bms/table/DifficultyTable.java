@@ -38,7 +38,7 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 			public int compare(Object o1, Object o2) {
 				DifficultyTableElement dte1 = (DifficultyTableElement) o1;
 				DifficultyTableElement dte2 = (DifficultyTableElement) o2;
-				int c = indexOf(dte1.getDifficultyID()) - indexOf(dte2.getDifficultyID());
+				int c = indexOf(dte1.getLevel()) - indexOf(dte2.getLevel());
 				if (c == 0) {
 					return dte1.getTitle().compareToIgnoreCase(dte2.getTitle());
 				}

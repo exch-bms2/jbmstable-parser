@@ -39,19 +39,19 @@ public abstract class BMSTableElement {
 		values.put(TITLE, title);
 	}
 	
-	public String getURL1() {
+	public String getURL() {
 		return (String)values.get("url");
 	}
 
-	public void setURL1(String url1) {
+	public void setURL(String url1) {
 		values.put("url", url1);
 	}
 
-	public String getURL1name() {
+	public String getArtist() {
 		return (String) values.get(ARTIST);
 	}
 
-	public void setURL1name(String url1name) {
+	public void setArtist(String url1name) {
 		values.put(ARTIST, url1name);
 	}
 

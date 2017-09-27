@@ -69,12 +69,12 @@ public class DifficultyTableElement extends BMSTableElement implements
 
 	public DifficultyTableElement(String did, String title, int bmsid,
 			String url1, String url2, String comment, String hash) {
-		this.setDifficultyID(did);
+		this.setLevel(did);
 		this.setTitle(title);
 		this.setBMSID(bmsid);
-		this.setURL1(url1);
-		this.setURL2(url2);
-		this.setComment1(comment);
+		this.setURL(url1);
+		this.setAppendURL(url2);
+		this.setComment(comment);
 		this.setMD5(hash);
 	}
 	
@@ -86,12 +86,16 @@ public class DifficultyTableElement extends BMSTableElement implements
 		state = id;
 	}
 
-	public String getDifficultyID() {
+	public String getLevel() {
 		return level;
 	}
 
-	public void setDifficultyID(String did) {
-		level = did;
+	public void setLevel(String did) {
+		if(did == null) {
+			level = "";
+		} else {
+			level = did;			
+		}
 	}
 
 	public int getEvaluation() {
@@ -102,51 +106,51 @@ public class DifficultyTableElement extends BMSTableElement implements
 		this.eval = eval;
 	}
 
-	public String getURL1sub() {
+	public String getPackageURL() {
 		return (String) getValues().get("url_pack");
 	}
 
-	public void setURL1sub(String url1sub) {
+	public void setPackageURL(String url1sub) {
 		getValues().put("url_pack", url1sub);
 	}
 
-	public String getURL1subname() {
+	public String getPackageName() {
 		return (String) getValues().get("name_pack");
 	}
 
-	public void setURL1subname(String url1subname) {
+	public void setPackageName(String url1subname) {
 		getValues().put("name_pack", url1subname);
 	}
 
-	public String getURL2() {
+	public String getAppendURL() {
 		return (String) getValues().get("url_diff");
 	}
 
-	public void setURL2(String url2) {
+	public void setAppendURL(String url2) {
 		getValues().put("url_diff", url2);
 	}
 
-	public String getURL2name() {
+	public String getAppendArtist() {
 		return diffname;
 	}
 
-	public void setURL2name(String url2name) {
+	public void setAppendArtist(String url2name) {
 		diffname = url2name;
 	}
 
-	public String getComment1() {
+	public String getComment() {
 		return comment;
 	}
 
-	public void setComment1(String comment1) {
+	public void setComment(String comment1) {
 		comment = comment1;
 	}
 
-	public String getComment2() {
+	public String getInformation() {
 		return info;
 	}
 
-	public void setComment2(String comment2) {
+	public void setInformation(String comment2) {
 		info = comment2;
 	}
 
@@ -191,22 +195,28 @@ public class DifficultyTableElement extends BMSTableElement implements
 
 		}
 		eval = evalvalue;
-		level= (String) values.get("level");
-		diffname = (String) values.get("name_diff");
-		comment = (String) values.get("comment");
-		info = (String) values.get("tag");
-		proposer = (String) values.get("proposer");
+		
+		Object level = values.get("level");
+		setLevel(level != null ? level.toString() : "");
+		Object diffname = values.get("name_diff");
+		setAppendArtist(diffname != null ? diffname.toString() : "");
+		Object comment = values.get("comment");
+		setComment(comment != null ? comment.toString() : "");
+		Object info = values.get("tag");
+		setInformation(info != null ? info.toString() : "");
+		Object proposer = values.get("proposer");
+		setProposer(proposer != null ? proposer.toString() : "");
 	}
 
 	@Override
 	public Map<String, Object> getValues() {
 		Map<String, Object> result = super.getValues();
-		result.put("level", getDifficultyID());
+		result.put("level", getLevel());
 		result.put("eval", getEvaluation());
 		result.put("state", getState());
-		result.put("name_diff", getURL2name());
-		result.put("comment", getComment1());
-		result.put("tag", getComment2());
+		result.put("name_diff", getAppendArtist());
+		result.put("comment", getComment());
+		result.put("tag", getInformation());
 		if(getProposer() != null && getProposer().length() > 0) {
 			result.put("proposer", getProposer());			
 		} else {
