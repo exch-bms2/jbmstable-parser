@@ -12,7 +12,7 @@ public class Course {
 	/**
 	 * 段位を構成する譜面のハッシュ値
 	 */
-	private String[] hashes = new String[0];
+	private BMSTableElement[] charts = new BMSTableElement[0];
 	/**
 	 * 段位名のスタイル
 	 */
@@ -34,12 +34,12 @@ public class Course {
 		this.name = name;
 	}
 
-	public String[] getHash() {
-		return hashes;
+	public BMSTableElement[] getCharts() {
+		return charts;
 	}
 
-	public void setHash(String[] hashes) {
-		this.hashes = hashes;
+	public void setCharts(BMSTableElement[] charts) {
+		this.charts = charts;
 	}
 
 	public String getStyle() {

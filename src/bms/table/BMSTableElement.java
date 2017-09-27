@@ -27,6 +27,10 @@ public abstract class BMSTableElement {
 	 * SHA256
 	 */
 	public static final String SHA256 = "sha256";
+	/**
+	 * モード
+	 */
+	public static final String MODE = "mode";
 	
 	public BMSTableElement() {
 	}
@@ -69,6 +73,14 @@ public abstract class BMSTableElement {
 
 	public void setSHA256(String hash) {
 		values.put(SHA256, hash);
+	}
+
+	public String getMode() {
+		return (String) values.get(MODE);
+	}
+
+	public void setMode(String mode) {
+		values.put(MODE, mode);
 	}
 
 	public List<String> getParentHash() {

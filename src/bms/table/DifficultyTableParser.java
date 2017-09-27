@@ -274,7 +274,21 @@ public class DifficultyTableParser {
 				for (Map<String, Object> grade : course) {
 					Course gr = new Course();
 					gr.setName((String) grade.get("name"));
-					gr.setHash(((List<String>) grade.get("md5")).toArray(new String[0]));
+					List<BMSTableElement> charts = new ArrayList();
+					if(grade.get("charts") != null) {
+						for(Map<String, Object> chart : (List<Map<String, Object>>) result.get("course")) {
+							BMSTableElement dte = new DifficultyTableElement();
+							dte.setValues(chart);
+							charts.add(dte);
+						}
+					} else {
+						for(String md5 : (List<String>) grade.get("md5")) {
+							BMSTableElement dte = new DifficultyTableElement();
+							dte.setMD5(md5);
+							charts.add(dte);							
+						}
+					}
+					gr.setCharts(charts.toArray(new BMSTableElement[charts.size()]));
 					gr.setStyle((String) grade.get("style"));
 					gr.setConstraint(((List<String>) grade.get("constraint")).toArray(new String[0]));
 					if (grade.get("trophy") != null) {
@@ -298,7 +312,13 @@ public class DifficultyTableParser {
 			for (Map<String, Object> grade : (List<Map<String, Object>>) result.get("grade")) {
 				Course gr = new Course();
 				gr.setName((String) grade.get("name"));
-				gr.setHash(((List<String>) grade.get("md5")).toArray(new String[0]));
+				List<BMSTableElement> charts = new ArrayList();
+				for(String md5 : (List<String>) grade.get("md5")) {
+					BMSTableElement dte = new DifficultyTableElement();
+					dte.setMD5(md5);
+					charts.add(dte);							
+				}
+				gr.setCharts(charts.toArray(new BMSTableElement[charts.size()]));
 				gr.setStyle((String) grade.get("style"));
 				gr.setConstraint(new String[] { "grade_mirror" });
 				l.add(gr);
@@ -354,6 +374,9 @@ public class DifficultyTableParser {
 							.get("sha256") != null && m.get("sha256").toString().length() > 24)))) {
 				DifficultyTableElement dte = new DifficultyTableElement();
 				dte.setValues(m);
+				if(dte.getMode() == null) {
+					dte.setMode(dt.getMode());
+				}
 
 				String level = String.valueOf(m.get("level"));
 				boolean b = true;
@@ -407,7 +430,7 @@ public class DifficultyTableParser {
 			for (Course g : dt.getCourse()[0]) {
 				Map<String, Object> m = new HashMap<String, Object>();
 				m.put("name", g.getName());
-				m.put("md5", g.getHash());
+//				m.put("md5", g.getHash());
 				m.put("style", g.getStyle());
 				grade.add(m);
 			}

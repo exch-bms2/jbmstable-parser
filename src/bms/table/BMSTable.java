@@ -31,6 +31,10 @@ public abstract class BMSTable<T> {
 	 * 表固有の属性値-名称のマップ
 	 */
 	public static final String ATTR = "attr";
+	/**
+	 * モード
+	 */
+	public static final String MODE = "mode";
 	
 	/**
 	 * 難易度表のソースURL
@@ -46,6 +50,7 @@ public abstract class BMSTable<T> {
 	private String[] dataURL = new String[0];
 	
 	private boolean autoUpdate = true;
+	
 	/**
 	 * 統合時のレベルマッピング.。key:元のレベル表記-value:統合時のレベル表記に変換する。
 	 * value=""の場合、そのレベルは統合時に除外する。nullの場合は元のレベル表記=統合時のレベル表記とする。
@@ -196,5 +201,13 @@ public abstract class BMSTable<T> {
 	public void setValues(Map<String, Object> values) {
 		this.values.clear();
 		this.values.putAll(values);
+	}
+
+	public String getMode() {
+		return (String)values.get(MODE);
+	}
+
+	public void setMode(String mode) {
+		values.put(MODE, mode);
 	}
 }
