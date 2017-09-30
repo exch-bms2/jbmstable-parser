@@ -276,7 +276,7 @@ public class DifficultyTableParser {
 					gr.setName((String) grade.get("name"));
 					List<BMSTableElement> charts = new ArrayList();
 					if(grade.get("charts") != null) {
-						for(Map<String, Object> chart : (List<Map<String, Object>>) result.get("course")) {
+						for(Map<String, Object> chart : (List<Map<String, Object>>) grade.get("charts")) {
 							BMSTableElement dte = new DifficultyTableElement();
 							dte.setValues(chart);
 							charts.add(dte);
