@@ -121,6 +121,8 @@ public class DifficultyTableParser {
 			// 難易度表ヘッダ(JSON)がない場合は、IRmemo用難易度表パーサに移行
 			// ただしcontainsHeaderでヘッダの存在を確認してからdecodeを実行するため、ここには到達しない
 			// エンコード不明の場合はreturn
+			throw new IOException();
+			/*
 			if (enc != null) {
 				// エンコード表記の統一
 				if (enc.toUpperCase().equals("UTF-8")) {
@@ -133,6 +135,7 @@ public class DifficultyTableParser {
 				// new InputStreamReader(new
 				// ByteArrayInputStream(data.get(urlname)), enc), b);
 			}
+			*/
 		}
 	}
 
