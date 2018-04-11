@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * 難易度表の要素
- * 
+ *
  * @author exch
  */
 public class DifficultyTableElement extends BMSTableElement implements
@@ -61,14 +61,14 @@ public class DifficultyTableElement extends BMSTableElement implements
 	 * 譜面情報
 	 */
 	private String info = "";
-	
+
 	private String proposer = "";
 
 	public DifficultyTableElement() {
 	}
 
 	public DifficultyTableElement(String did, String title, int bmsid,
-			String url1, String url2, String comment, String hash) {
+			String url1, String url2, String comment, String hash,String ipfs) {
 		this.setLevel(did);
 		this.setTitle(title);
 		this.setBMSID(bmsid);
@@ -76,8 +76,9 @@ public class DifficultyTableElement extends BMSTableElement implements
 		this.setAppendURL(url2);
 		this.setComment(comment);
 		this.setMD5(hash);
+		this.setIPFS(ipfs);
 	}
-	
+
 	public int getState() {
 		return state;
 	}
@@ -94,7 +95,7 @@ public class DifficultyTableElement extends BMSTableElement implements
 		if(did == null) {
 			level = "";
 		} else {
-			level = did;			
+			level = did;
 		}
 	}
 
@@ -130,6 +131,14 @@ public class DifficultyTableElement extends BMSTableElement implements
 		getValues().put("url_diff", url2);
 	}
 
+	public String getAppendIPFS() {
+		return (String)getValues().get("ipfs_diff");
+	}
+
+	public void setAppendIPFS(String ipfs2) {
+		getValues().put("ipfs_diff", ipfs2);
+	}
+
 	public String getAppendArtist() {
 		return diffname;
 	}
@@ -161,7 +170,7 @@ public class DifficultyTableElement extends BMSTableElement implements
 	public void setProposer(String proposer) {
 		this.proposer = proposer;
 	}
-	
+
 	public int getBMSID() {
 		int result = 0;
 		try {
@@ -195,7 +204,7 @@ public class DifficultyTableElement extends BMSTableElement implements
 
 		}
 		eval = evalvalue;
-		
+
 		Object level = values.get("level");
 		setLevel(level != null ? level.toString() : "");
 		Object diffname = values.get("name_diff");
@@ -218,7 +227,7 @@ public class DifficultyTableElement extends BMSTableElement implements
 		result.put("comment", getComment());
 		result.put("tag", getInformation());
 		if(getProposer() != null && getProposer().length() > 0) {
-			result.put("proposer", getProposer());			
+			result.put("proposer", getProposer());
 		} else {
 			result.remove("proposer");
 		}
