@@ -1,14 +1,17 @@
 package bms.table;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 表の要素
- * 
+ *
  * @author exch
  */
 public abstract class BMSTableElement {
-	
+
 	private Map<String, Object> values = new HashMap<String, Object>();
 
 	/**
@@ -31,10 +34,10 @@ public abstract class BMSTableElement {
 	 * モード
 	 */
 	public static final String MODE = "mode";
-	
+
 	public BMSTableElement() {
 	}
-	
+
 	public String getTitle() {
 		return (String) values.get(TITLE);
 	}
@@ -42,13 +45,21 @@ public abstract class BMSTableElement {
 	public void setTitle(String title) {
 		values.put(TITLE, title);
 	}
-	
+
 	public String getURL() {
 		return (String)values.get("url");
 	}
 
 	public void setURL(String url1) {
 		values.put("url", url1);
+	}
+
+	public String getIPFS() {
+		return (String)values.get("ipfs");
+	}
+
+	public void setIPFS(String ipfs1) {
+		values.put("ipfs", ipfs1);
 	}
 
 	public String getArtist() {
@@ -95,15 +106,15 @@ public abstract class BMSTableElement {
 		}
 		return null;
 	}
-	
+
 	public void setParentHash(List<String> hashes) {
 		if(hashes == null || hashes.size() == 0) {
 			values.remove("org_md5");
 		} else {
 			values.put("org_md5", hashes);
-		}		
+		}
 	}
-	
+
 	public Map<String, Object> getValues() {
 		return values;
 	}
@@ -111,5 +122,5 @@ public abstract class BMSTableElement {
 	public void setValues(Map<String, Object> values) {
 		this.values.clear();
 		this.values.putAll(values);
-	}	
+	}
 }
