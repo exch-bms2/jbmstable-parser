@@ -199,7 +199,7 @@ public class DifficultyTableParser {
 				}
 			}
 			if (dt.getLevelDescription().length == 0) {
-				dt.setLevelDescription(levels.toArray(new String[0]));
+				dt.setLevelDescription(levels.toArray(new String[levels.size()]));
 			}
 			dt.setModels(elements);
 		}
@@ -301,11 +301,11 @@ public class DifficultyTableParser {
 							t.setStyle((String) tr.get("style"));
 							trophy.add(t);
 						}
-						gr.setTrophy(trophy.toArray(new Trophy[0]));
+						gr.setTrophy(trophy.toArray(new Trophy[trophy.size()]));
 					}
 					l.add(gr);
 				}
-				courses.add(l.toArray(new Course[0]));
+				courses.add(l.toArray(new Course[l.size()]));
 			}
 		} else if (result.get("grade") != null) {
 			List<Course> l = new ArrayList<Course>();
@@ -320,12 +320,12 @@ public class DifficultyTableParser {
 				}
 				gr.setCharts(charts.toArray(new BMSTableElement[charts.size()]));
 				gr.setStyle((String) grade.get("style"));
-				gr.setConstraint(new String[] { "grade_mirror" });
+				gr.setConstraint(new String[] { "grade_mirror","gauge_lr2" });
 				l.add(gr);
 			}
-			courses.add(l.toArray(new Course[0]));
+			courses.add(l.toArray(new Course[l.size()]));
 		}
-		dt.setCourse(courses.toArray(new Course[0][]));
+		dt.setCourse(courses.toArray(new Course[courses.size()][]));
 		// 必須項目が定義されていない場合は例外をスロー
 		if (result.get("name") == null || result.get("symbol") == null) {
 			throw new IOException("ヘッダ部の情報が不足しています", null);
@@ -366,8 +366,7 @@ public class DifficultyTableParser {
 	private void decodeJSONTableData(DifficultyTable dt, List<Map<String, Object>> result, boolean accept) {
 		dt.removeAllElements();
 		List<String> levelorder = new ArrayList<String>();
-		for (int i = 0; i < result.size(); i++) {
-			Map<String, Object> m = result.get(i);
+		for (Map<String, Object> m : result) {
 			// levelとmd5(sha256)が定義されていない要素は弾く
 			if (accept
 					|| (m.get("level") != null && ((m.get("md5") != null && m.get("md5").toString().length() > 24) || (m
@@ -396,7 +395,7 @@ public class DifficultyTableParser {
 		}
 
 		if (dt.getLevelDescription().length == 0) {
-			dt.setLevelDescription(levelorder.toArray(new String[0]));
+			dt.setLevelDescription(levelorder.toArray(new String[levelorder.size()]));
 		}
 	}
 
