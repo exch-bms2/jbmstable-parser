@@ -2,6 +2,7 @@ package bms.table;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * 難易度表
@@ -45,7 +46,7 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 				return c;
 			}
 		};
-		Arrays.sort(dte, asc);
+		//Arrays.sort(dte, asc);
 		return dte;
 	}
 

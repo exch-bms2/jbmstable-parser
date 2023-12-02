@@ -190,19 +190,19 @@ public class DifficultyTableElement extends BMSTableElement implements
 	public void setValues(Map<String, Object> values) {
 		super.setValues(values);
 		int statevalue = 0;
-		try {
+/*		try {
 			statevalue = Integer.parseInt(String.valueOf(values.get("state")));
 		} catch (NumberFormatException e) {
 
-		}
+		}*/
 		state = statevalue;
 
 		int evalvalue = 0;
-		try {
+/*		try {
 			evalvalue = Integer.parseInt(String.valueOf(values.get("eval")));
 		} catch (NumberFormatException e) {
 
-		}
+		}*/
 		eval = evalvalue;
 
 		Object level = values.get("level");

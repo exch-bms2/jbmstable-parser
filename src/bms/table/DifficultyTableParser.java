@@ -178,17 +178,19 @@ public class DifficultyTableParser {
 										.getAbsoluteURL(dt.getSourceURL(), dt.getHeadURL()), url)));
 				levels.addAll(Arrays.asList(table.getLevelDescription()));
 				// 重複BMSの処理
+				// TODO: move BMS deduplication out of this function
 				for (DifficultyTableElement dte : table.getElements()) {
+
 					if (conf.get(dte.getLevel()) == null || conf.get(dte.getLevel()).length() > 0) {
 						boolean contains = false;
-						for (DifficultyTableElement dte2 : elements) {
+/*						for (DifficultyTableElement dte2 : elements) {
 							if ((dte.getMD5() != null && dte.getMD5().length() > 10
 									&& dte.getMD5().equals(dte2.getMD5()) || (dte.getSHA256() != null
 									&& dte.getSHA256().length() > 10 && dte.getSHA256().equals(dte2.getSHA256())))) {
 								contains = true;
 								break;
 							}
-						}
+						}*/
 						if (!contains) {
 							if (conf.get(dte.getLevel()) != null) {
 								dte.setLevel(conf.get(dte.getLevel()));
