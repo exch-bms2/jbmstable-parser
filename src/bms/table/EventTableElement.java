@@ -1,6 +1,9 @@
 package bms.table;
 
 public class EventTableElement extends BMSTableElement {
+
+	private static final long serialVersionUID = 1L;
+
 	// TODO 楽曲入手状況のみが重要。スコアは不要かも
 	// TODO 投票状況とか
 

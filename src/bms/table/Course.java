@@ -1,9 +1,10 @@
 package bms.table;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import java.io.Serializable;
 
-public class Course {
+public class Course implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * コース名
@@ -66,7 +67,9 @@ public class Course {
 		this.trophy = trophy;
 	}
 
-	public static class Trophy {
+	public static class Trophy implements Serializable {
+
+		private static final long serialVersionUID = 1L;
 		
 		private String name = "新規トロフィー";
 		/**

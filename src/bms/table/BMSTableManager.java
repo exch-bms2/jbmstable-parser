@@ -11,13 +11,13 @@ public class BMSTableManager {
 	/**
 	 * 表リスト
 	 */
-	private List<BMSTable> tableList = new ArrayList<BMSTable>();
+	private List<BMSTable<?>> tableList = new ArrayList<>();
 
-	private List<BMSTableManagerListener> listener = new ArrayList<BMSTableManagerListener>();
+	private List<BMSTableManagerListener> listener = new ArrayList<>();
 
-	private Map<String, List<DifficultyTableElement>> userList = new HashMap<String, List<DifficultyTableElement>>();
+	private Map<String, List<DifficultyTableElement>> userList = new HashMap<>();
 
-	private Map<String, String> memoMap = new HashMap<String, String>();
+	private Map<String, String> memoMap = new HashMap<>();
 
 	public BMSTableManager() {
 	}
@@ -28,9 +28,7 @@ public class BMSTableManager {
 	}
 
 	public void fireModelChanged() {
-		for (int i = 0; i < listener.size(); i++) {
-			listener.get(i).modelChanged();
-		}
+		listener.forEach(BMSTableManagerListener::modelChanged);
 	}
 
 	/**
@@ -39,7 +37,7 @@ public class BMSTableManager {
 	 * @param dt
 	 *            追加する難易度表
 	 */
-	public void addBMSTable(BMSTable dt) {
+	public void addBMSTable(BMSTable<?> dt) {
 		tableList.add(dt);
 		this.fireModelChanged();
 	}
@@ -50,7 +48,7 @@ public class BMSTableManager {
 	 * @param dt
 	 *            削除する難易度表
 	 */
-	public void removeBMSTable(BMSTable dt) {
+	public void removeBMSTable(BMSTable<?> dt) {
 		tableList.remove(dt);
 		this.fireModelChanged();
 	}
@@ -60,11 +58,11 @@ public class BMSTableManager {
 	 * 
 	 * @return 難易度表リスト
 	 */
-	public BMSTable[] getBMSTables() {
-		return tableList.toArray(new BMSTable[0]);
+	public BMSTable<?>[] getBMSTables() {
+		return tableList.toArray(new BMSTable<?>[0]);
 	}
 
-	public List<BMSTable> getTableList() {
+	public List<BMSTable<?>> getTableList() {
 		return tableList;
 	}
 
@@ -85,19 +83,16 @@ public class BMSTableManager {
 	}
 	
 	public List<DifficultyTableElement> getUserDifficultyTableElements(String name) {
-		if(userList.get(name) == null) {
-			userList.put(name, new ArrayList<DifficultyTableElement>());
-		}
-		return userList.get(name);
+		return userList.computeIfAbsent(name, key -> new ArrayList<>());
 	}
 
-	public void setTableList(List<BMSTable> tableList) {
+	public void setTableList(List<BMSTable<?>> tableList) {
 		this.tableList = tableList;
 	}
 
 	public void clearAllTableElements() {
-		for (int i = 0; i < tableList.size(); i++) {
-			tableList.get(i).removeAllElements();
+		for (BMSTable<?> table : tableList) {
+			table.removeAllElements();
 		}
 	}
 }

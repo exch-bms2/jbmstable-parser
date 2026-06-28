@@ -9,7 +9,7 @@ import java.util.*;
  */
 public abstract class BMSTable<T> {
 	
-	private Map<String, Object> values = new HashMap<String, Object>();
+	private Map<String, Object> values = new HashMap<>();
 
 	/**
 	 * 表の名称
@@ -55,7 +55,7 @@ public abstract class BMSTable<T> {
 	 * 統合時のレベルマッピング.。key:元のレベル表記-value:統合時のレベル表記に変換する。
 	 * value=""の場合、そのレベルは統合時に除外する。nullの場合は元のレベル表記=統合時のレベル表記とする。
 	 */
-	Map<String, Map<String, String>> mergeConfigurations = new HashMap<String, Map<String, String>>();
+	Map<String, Map<String, String>> mergeConfigurations = new HashMap<>();
 
 	/**
 	 * 最終更新時間(ms)。終了時に保存しない
@@ -64,13 +64,20 @@ public abstract class BMSTable<T> {
 	/**
 	 * 表の要素
 	 */
-	private List<T> models = new ArrayList<T>();
+	private List<T> models = new ArrayList<>();
 	
 	private boolean editable = false;
 	/**
 	 * アクセス回数
 	 */
 	private int accessCount = 0;
+
+	protected BMSTable() {
+	}
+
+	protected BMSTable(String sourceURL) {
+		this.sourceURL = sourceURL;
+	}
 	
 	public String getName() {
 		return (String)values.get(NAME);
@@ -155,11 +162,13 @@ public abstract class BMSTable<T> {
 		this.editable = editable;
 	}
 
+	@SuppressWarnings("unchecked")
 	public Map<String, String> getAttrmap() {
-		if(values.containsKey(ATTR)) {
-			return (Map<String, String>) values.get(ATTR);
+		Object attr = values.get(ATTR);
+		if (attr instanceof Map<?, ?>) {
+			return (Map<String, String>) attr;
 		}
-		return new HashMap<String, String>();
+		return new HashMap<>();
 	}
 
 	public void setAttrmap(Map<String, String> attrmap) {

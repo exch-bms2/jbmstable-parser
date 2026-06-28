@@ -1,5 +1,6 @@
 package bms.table;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,9 +11,12 @@ import java.util.Map;
  *
  * @author exch
  */
-public abstract class BMSTableElement {
+@SuppressWarnings("serial")
+public abstract class BMSTableElement implements Serializable {
 
-	private Map<String, Object> values = new HashMap<String, Object>();
+	private static final long serialVersionUID = 1L;
+
+	private Map<String, Object> values = new HashMap<>();
 
 	/**
 	 * タイトル
@@ -36,6 +40,10 @@ public abstract class BMSTableElement {
 	public static final String MODE = "mode";
 
 	public BMSTableElement() {
+	}
+
+	protected BMSTableElement(Map<String, Object> values) {
+		this.values.putAll(values);
 	}
 
 	public String getTitle() {
@@ -97,12 +105,18 @@ public abstract class BMSTableElement {
 	public List<String> getParentHash() {
 		Object o = values.get("org_md5");
 		if(o instanceof String) {
-			List<String> result = new ArrayList<String>();
+			List<String> result = new ArrayList<>();
 			result.add((String) o);
 			return result;
 		}
-		if(o instanceof List) {
-			return (List<String>) o;
+		if(o instanceof List<?> list) {
+			List<String> result = new ArrayList<>();
+			for (Object value : list) {
+				if (value instanceof String hash) {
+					result.add(hash);
+				}
+			}
+			return result;
 		}
 		return null;
 	}
@@ -123,4 +137,5 @@ public abstract class BMSTableElement {
 		this.values.clear();
 		this.values.putAll(values);
 	}
+
 }

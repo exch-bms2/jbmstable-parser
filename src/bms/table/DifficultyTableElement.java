@@ -1,6 +1,7 @@
 package bms.table;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -11,6 +12,8 @@ import java.util.Map;
  */
 public class DifficultyTableElement extends BMSTableElement implements
 		Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 譜面の状態
@@ -69,14 +72,21 @@ public class DifficultyTableElement extends BMSTableElement implements
 
 	public DifficultyTableElement(String did, String title, int bmsid,
 			String url1, String url2, String comment, String hash,String ipfs) {
-		this.setLevel(did);
-		this.setTitle(title);
-		this.setBMSID(bmsid);
-		this.setURL(url1);
-		this.setAppendURL(url2);
-		this.setComment(comment);
-		this.setMD5(hash);
-		this.setIPFS(ipfs);
+		super(values(title, bmsid, url1, url2, hash, ipfs));
+		level = did == null ? "" : did;
+		this.comment = comment;
+	}
+
+	private static Map<String, Object> values(String title, int bmsid, String url1, String url2, String hash,
+			String ipfs) {
+		Map<String, Object> values = new HashMap<>();
+		values.put(TITLE, title);
+		values.put("lr2_bmsid", bmsid);
+		values.put("url", url1);
+		values.put("url_diff", url2);
+		values.put(MD5, hash);
+		values.put("ipfs", ipfs);
+		return values;
 	}
 
 	public int getState() {

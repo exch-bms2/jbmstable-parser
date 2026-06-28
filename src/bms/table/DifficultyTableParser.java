@@ -2,12 +2,15 @@ package bms.table;
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import bms.table.Course.Trophy;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -23,7 +26,12 @@ public class DifficultyTableParser {
 	/**
 	 * 難易度表データ
 	 */
-	private Map<String, String[]> data = new HashMap<String, String[]>();
+	private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
+	};
+	private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE = new TypeReference<>() {
+	};
+
+	private Map<String, String[]> data = new HashMap<>();
 
 	public DifficultyTableParser() {
 	}
@@ -47,18 +55,12 @@ public class DifficultyTableParser {
 	}
 
 	private String[] readAllLines(String urlname) {
-		String[] result = null;
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new URL(urlname).openStream()))) {
-			List<String> l = new ArrayList();
-			String line = null;
-			while ((line = br.readLine()) != null) {
-				l.add(line);
-			}
-			result = l.toArray(new String[l.size()]);
+			return br.lines().toArray(String[]::new);
 		} catch (IOException e) {
 			Logger.getGlobal().severe("難易度表サイト解析中の例外:" + e.getMessage());
 		}
-		return result;
+		return null;
 	}
 
 	private String getMetaTag(String urlname, String name) {
@@ -162,12 +164,12 @@ public class DifficultyTableParser {
 		String[] urls = dt.getDataURL();
 		if (saveElements) {
 			dt.removeAllElements();
-			List<DifficultyTableElement> elements = new ArrayList();
-			List<String> levels = new ArrayList();
+			List<DifficultyTableElement> elements = new ArrayList<>();
+			List<String> levels = new ArrayList<>();
 			for (String url : urls) {
 				Map<String, String> conf = dt.getMergeConfigurations().get(url);
 				if (conf == null) {
-					conf = new HashMap();
+					conf = new HashMap<>();
 				}
 				DifficultyTable table = new DifficultyTable();
 
@@ -218,7 +220,8 @@ public class DifficultyTableParser {
 	 */
 	public void decodeJSONTableHeader(DifficultyTable dt, File jsonheader) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-		this.decodeJSONTableHeader(dt, mapper.readValue(jsonheader, Map.class));
+		Map<String, Object> result = mapper.readValue(jsonheader, MAP_TYPE);
+		this.decodeJSONTableHeader(dt, result);
 	}
 
 	/**
@@ -234,10 +237,12 @@ public class DifficultyTableParser {
 	 */
 	public void decodeJSONTableHeader(DifficultyTable dt, URL jsonheader) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-		this.decodeJSONTableHeader(dt, mapper.readValue(jsonheader, Map.class));
+		Map<String, Object> result = mapper.readValue(jsonheader, MAP_TYPE);
+		this.decodeJSONTableHeader(dt, result);
 		dt.setHeadURL(jsonheader.toExternalForm());
 	}
 
+	@SuppressWarnings("unchecked")
 	private DifficultyTable decodeJSONTableHeader(DifficultyTable dt, Map<String, Object> result) throws IOException {
 		dt.setValues(result);
 		// level_order処理
@@ -245,13 +250,13 @@ public class DifficultyTableParser {
 		if (dataurl instanceof String) {
 			dt.setDataURL(new String[] { (String) dataurl });
 		}
-		if (dataurl instanceof List) {
-			dt.setDataURL((String[]) ((List) dataurl).toArray(new String[0]));
+		if (dataurl instanceof List<?> list) {
+			dt.setDataURL(list.stream().map(String::valueOf).toArray(String[]::new));
 		}
-		Map<String, Map<String, String>> mergerule = new HashMap();
+		Map<String, Map<String, String>> mergerule = new HashMap<>();
 		List<Map<String, String>> merge = (List<Map<String, String>>) result.get("data_rule");
 		if (merge == null) {
-			merge = new ArrayList();
+			merge = new ArrayList<>();
 		}
 		for (int i = 0; i < dt.getDataURL().length; i++) {
 			if (i == merge.size()) {
@@ -260,21 +265,21 @@ public class DifficultyTableParser {
 			mergerule.put(dt.getDataURL()[i], merge.get(i));
 		}
 		dt.setMergeConfigurations(mergerule);
-		List<Course[]> courses = new ArrayList();
+		List<Course[]> courses = new ArrayList<>();
 		if (result.get("course") != null) {
-			List<List<Map<String, Object>>> courselist = new ArrayList<List<Map<String, Object>>>();
-			if (((List) result.get("course")).get(0) instanceof List) {
+			List<List<Map<String, Object>>> courselist = new ArrayList<>();
+			if (((List<?>) result.get("course")).get(0) instanceof List) {
 				courselist = (List<List<Map<String, Object>>>) result.get("course");
 			}
-			if (((List) result.get("course")).get(0) instanceof Map) {
+			if (((List<?>) result.get("course")).get(0) instanceof Map) {
 				courselist.add((List<Map<String, Object>>) result.get("course"));
 			}
 			for (List<Map<String, Object>> course : courselist) {
-				List<Course> l = new ArrayList<Course>();
+				List<Course> l = new ArrayList<>();
 				for (Map<String, Object> grade : course) {
 					Course gr = new Course();
 					gr.setName((String) grade.get("name"));
-					List<BMSTableElement> charts = new ArrayList();
+					List<BMSTableElement> charts = new ArrayList<>();
 					if(grade.get("charts") != null) {
 						for(Map<String, Object> chart : (List<Map<String, Object>>) grade.get("charts")) {
 							BMSTableElement dte = new DifficultyTableElement();
@@ -292,7 +297,7 @@ public class DifficultyTableParser {
 					gr.setStyle((String) grade.get("style"));
 					gr.setConstraint(((List<String>) grade.get("constraint")).toArray(new String[0]));
 					if (grade.get("trophy") != null) {
-						List<Trophy> trophy = new ArrayList();
+						List<Trophy> trophy = new ArrayList<>();
 						for (Map<String, Object> tr : (List<Map<String, Object>>) grade.get("trophy")) {
 							Trophy t = new Trophy();
 							t.setName((String) tr.get("name"));
@@ -308,11 +313,11 @@ public class DifficultyTableParser {
 				courses.add(l.toArray(new Course[l.size()]));
 			}
 		} else if (result.get("grade") != null) {
-			List<Course> l = new ArrayList<Course>();
+			List<Course> l = new ArrayList<>();
 			for (Map<String, Object> grade : (List<Map<String, Object>>) result.get("grade")) {
 				Course gr = new Course();
 				gr.setName((String) grade.get("name"));
-				List<BMSTableElement> charts = new ArrayList();
+				List<BMSTableElement> charts = new ArrayList<>();
 				for(String md5 : (List<String>) grade.get("md5")) {
 					BMSTableElement dte = new DifficultyTableElement();
 					dte.setMD5(md5);
@@ -344,7 +349,7 @@ public class DifficultyTableParser {
 	public void decodeJSONTableData(DifficultyTable dt, File jsondata) throws IOException {
 		// JSON読み込み
 		ObjectMapper mapper = new ObjectMapper();
-		this.decodeJSONTableData(dt, mapper.readValue(jsondata, List.class), true);
+		this.decodeJSONTableData(dt, mapper.readValue(jsondata, LIST_MAP_TYPE), true);
 	}
 
 	/**
@@ -360,12 +365,12 @@ public class DifficultyTableParser {
 		// JSON読み込み
 		ObjectMapper mapper = new ObjectMapper();
 		// 難易度表に変換
-		this.decodeJSONTableData(dt, mapper.readValue(jsondata, List.class), false);
+		this.decodeJSONTableData(dt, mapper.readValue(jsondata, LIST_MAP_TYPE), false);
 	}
 
 	private void decodeJSONTableData(DifficultyTable dt, List<Map<String, Object>> result, boolean accept) {
 		dt.removeAllElements();
-		List<String> levelorder = new ArrayList<String>();
+		List<String> levelorder = new ArrayList<>();
 		for (Map<String, Object> m : result) {
 			// levelとmd5(sha256)が定義されていない要素は弾く
 			if (accept
@@ -410,7 +415,7 @@ public class DifficultyTableParser {
 	public void encodeJSONTableHeader(DifficultyTable dt, File jsonheader) {
 		try {
 			// ヘッダ部のエクスポート
-			Map<String, Object> header = new HashMap<String, Object>();
+			Map<String, Object> header = new HashMap<>();
 			header.put("name", dt.getName());
 			header.put("symbol", dt.getID());
 			header.put("tag", dt.getTag());
@@ -425,9 +430,9 @@ public class DifficultyTableParser {
 			}
 
 			// TODO 後でcourseの仕様に合わせる
-			List<Map<String, Object>> grade = new ArrayList<Map<String, Object>>();
+			List<Map<String, Object>> grade = new ArrayList<>();
 			for (Course g : dt.getCourse()[0]) {
-				Map<String, Object> m = new HashMap<String, Object>();
+				Map<String, Object> m = new HashMap<>();
 				m.put("name", g.getName());
 //				m.put("md5", g.getHash());
 				m.put("style", g.getStyle());
@@ -437,10 +442,9 @@ public class DifficultyTableParser {
 
 			ObjectMapper objectMapper = new ObjectMapper();
 			String json = objectMapper.writeValueAsString(header);
-			OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(jsonheader), "UTF-8");
-			osw.write(json);
-			osw.flush();
-			osw.close();
+			try (BufferedWriter writer = Files.newBufferedWriter(jsonheader.toPath(), StandardCharsets.UTF_8)) {
+				writer.write(json);
+			}
 		} catch (Exception e) {
 			// controller.showErrorMessage("難易度表の保存に失敗しました");
 			Logger.getGlobal().severe("難易度表の保存中の例外:" + e.getMessage());
@@ -463,17 +467,16 @@ public class DifficultyTableParser {
 			// ヘッダ部のエクスポート
 			this.encodeJSONTableHeader(dt, jsonheader);
 			// データ部のエクスポート
-			List<Map<String, Object>> datas = new ArrayList<Map<String, Object>>();
+			List<Map<String, Object>> datas = new ArrayList<>();
 			for (DifficultyTableElement te : dt.getElements()) {
 				datas.add(te.getValues());
 			}
 			ObjectMapper objectMapper = new ObjectMapper();
 			objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 			String json = objectMapper.writeValueAsString(datas);
-			OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(jsondata), "UTF-8");
-			osw.write(json);
-			osw.flush();
-			osw.close();
+			try (BufferedWriter writer = Files.newBufferedWriter(jsondata.toPath(), StandardCharsets.UTF_8)) {
+				writer.write(json);
+			}
 		} catch (Exception e) {
 			// controller.showErrorMessage("難易度表の保存に失敗しました");
 			Logger.getGlobal().severe("難易度表の保存中の例外:" + e.getMessage());
@@ -502,7 +505,7 @@ public class DifficultyTableParser {
 
 		boolean diff = false;
 		int state = -1;
-		List<DifficultyTableElement> result = new ArrayList<DifficultyTableElement>();
+		List<DifficultyTableElement> result = new ArrayList<>();
 		DifficultyTableElement dte = null;
 		Pattern p = Pattern.compile("\"");
 		dt.removeAllElements();
@@ -584,7 +587,7 @@ public class DifficultyTableParser {
 			}
 		}
 		if (dt.getLevelDescription().length == 0) {
-			List<String> l = new ArrayList<String>();
+			List<String> l = new ArrayList<>();
 			for (int i = 0; i < result.size(); i++) {
 				boolean b = true;
 				for (int j = 0; j < l.size(); j++) {

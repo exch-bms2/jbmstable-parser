@@ -28,24 +28,18 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 	}
 
 	public DifficultyTable(String sourceURL) {
-		super();
-		this.setSourceURL(sourceURL);
+		super(sourceURL);
 	}
 
 	public DifficultyTableElement[] getElements() {
 		DifficultyTableElement[] dte = this.getModels().toArray(new DifficultyTableElement[0]);
-		Comparator asc = new Comparator() {
-			public int compare(Object o1, Object o2) {
-				DifficultyTableElement dte1 = (DifficultyTableElement) o1;
-				DifficultyTableElement dte2 = (DifficultyTableElement) o2;
-				int c = indexOf(dte1.getLevel()) - indexOf(dte2.getLevel());
-				if (c == 0) {
-					return dte1.getTitle().compareToIgnoreCase(dte2.getTitle());
-				}
-				return c;
+		Arrays.sort(dte, (dte1, dte2) -> {
+			int c = indexOf(dte1.getLevel()) - indexOf(dte2.getLevel());
+			if (c == 0) {
+				return dte1.getTitle().compareToIgnoreCase(dte2.getTitle());
 			}
-		};
-		Arrays.sort(dte, asc);
+			return c;
+		});
 		return dte;
 	}
 
@@ -59,15 +53,15 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 	}
 
 	public String[] getLevelDescription() {
-		List l = (List) this.getValues().get(LEVEL_ORDER);
-		if (l != null) {
+		Object value = this.getValues().get(LEVEL_ORDER);
+		if (value instanceof List<?> l) {
 			String[] levels = new String[l.size()];
 			for (int i = 0; i < levels.length; i++) {
 				levels[i] = l.get(i).toString();
 			}
 			return levels;
 		}
-		return new String[] {};
+		return new String[0];
 	}
 
 	public void setLevelDescription(String[] levelDescription) {
