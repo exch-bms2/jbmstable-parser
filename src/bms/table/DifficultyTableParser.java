@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import bms.table.Course.Trophy;
@@ -56,11 +57,30 @@ public class DifficultyTableParser {
 
 	private String[] readAllLines(String urlname) {
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new URL(urlname).openStream()))) {
-			return br.lines().toArray(String[]::new);
+			List<String> lines = new ArrayList<>();
+			String line;
+			while ((line = br.readLine()) != null) {
+				lines.add(line);
+			}
+			return lines.toArray(String[]::new);
 		} catch (IOException e) {
-			Logger.getGlobal().severe("難易度表サイト解析中の例外:" + e.getMessage());
+			Logger.getGlobal().warning("難易度表サイト解析中の例外:" + e);
 		}
 		return null;
+	}
+
+	private String metaContent(String line, String name, String attribute) {
+		if (!line.toLowerCase(Locale.ROOT).contains("<meta")) {
+			return null;
+		}
+		String value = attributeValue(line, attribute);
+		return name.equalsIgnoreCase(value) ? attributeValue(line, "content") : null;
+	}
+
+	private String attributeValue(String line, String attribute) {
+		Matcher matcher = Pattern.compile("(?:^|\\s)" + attribute + "\\s*=\\s*([\"'])(.*?)\\1", Pattern.CASE_INSENSITIVE)
+				.matcher(line);
+		return matcher.find() ? matcher.group(2) : null;
 	}
 
 	private String getMetaTag(String urlname, String name) {
@@ -71,10 +91,9 @@ public class DifficultyTableParser {
 			return null;
 		}
 		for (String line : data.get(urlname)) {
-			// 難易度表ヘッダ
-			if (line.toLowerCase().contains("<meta name=\"" + name + "\"")) {
-				Pattern p = Pattern.compile("\"");
-				return p.split(line)[3];
+			String content = metaContent(line, name, "name");
+			if (content != null) {
+				return content;
 			}
 		}
 		return null;
@@ -102,16 +121,14 @@ public class DifficultyTableParser {
 			if (data.get(urlname) == null) {
 				throw new IOException();
 			}
-			Pattern p = Pattern.compile("\"");
 			for (String line : data.get(urlname)) {
-				// 文字エンコード
-				if (line.toLowerCase().contains("<meta http-equiv=\"content-type\"")) {
-					String str = p.split(line)[3];
-					enc = str.substring(str.indexOf("charset=") + 8);
+				String contentType = metaContent(line, "content-type", "http-equiv");
+				if (contentType != null && contentType.contains("charset=")) {
+					enc = contentType.substring(contentType.indexOf("charset=") + 8);
 				}
-				// 難易度表ヘッダ
-				if (line.toLowerCase().contains("<meta name=\"bmstable\"")) {
-					tableurl = p.split(line)[3];
+				String header = metaContent(line, "bmstable", "name");
+				if (header != null) {
+					tableurl = header;
 				}
 			}
 		}
@@ -138,16 +155,14 @@ public class DifficultyTableParser {
 		}
 	}
 
-	private String getAbsoluteURL(String source, String path) {
-		// DataURL相対パス対応
-		String urldir = source.substring(0, source.lastIndexOf('/') + 1);
-		if (!path.startsWith("http") && !path.startsWith(urldir)) {
-			if (path.startsWith("./")) {
-				path = path.substring(2);
-			}
-			return urldir + path;
+	private String getAbsoluteURL(String source, String path) throws MalformedURLException {
+		return new URL(new URL(source), path).toExternalForm();
+	}
+
+	private <T> T readValue(ObjectMapper mapper, URL url, TypeReference<T> type) throws IOException {
+		try (InputStream inputStream = url.openStream()) {
+			return mapper.readValue(inputStream, type);
 		}
-		return path;
 	}
 
 	/**
@@ -163,21 +178,31 @@ public class DifficultyTableParser {
 		this.decodeJSONTableHeader(dt, jsonheader);
 		String[] urls = dt.getDataURL();
 		if (saveElements) {
-			dt.removeAllElements();
 			List<DifficultyTableElement> elements = new ArrayList<>();
 			List<String> levels = new ArrayList<>();
+			int loaded = 0;
 			for (String url : urls) {
+				if (url == null || url.isBlank()) {
+					Logger.getGlobal().warning("空の難易度表データURLをスキップします");
+					continue;
+				}
 				Map<String, String> conf = dt.getMergeConfigurations().get(url);
 				if (conf == null) {
 					conf = new HashMap<>();
 				}
 				DifficultyTable table = new DifficultyTable();
 
-				this.decodeJSONTableData(
-						table,
-						new URL(this.getAbsoluteURL(
-								(dt.getSourceURL() == null || dt.getSourceURL().length() == 0) ? dt.getHeadURL() : this
-										.getAbsoluteURL(dt.getSourceURL(), dt.getHeadURL()), url)));
+				try {
+					this.decodeJSONTableData(
+							table,
+							new URL(this.getAbsoluteURL(
+									(dt.getSourceURL() == null || dt.getSourceURL().length() == 0) ? dt.getHeadURL() : this
+											.getAbsoluteURL(dt.getSourceURL(), dt.getHeadURL()), url)));
+				} catch (IOException e) {
+					Logger.getGlobal().warning("難易度表データをスキップします: " + url + " - " + e);
+					continue;
+				}
+				loaded++;
 				levels.addAll(Arrays.asList(table.getLevelDescription()));
 				// 重複BMSの処理
 				for (DifficultyTableElement dte : table.getElements()) {
@@ -199,6 +224,9 @@ public class DifficultyTableParser {
 						}
 					}
 				}
+			}
+			if (loaded == 0) {
+				return;
 			}
 			if (dt.getLevelDescription().length == 0) {
 				dt.setLevelDescription(levels.toArray(new String[levels.size()]));
@@ -237,105 +265,123 @@ public class DifficultyTableParser {
 	 */
 	public void decodeJSONTableHeader(DifficultyTable dt, URL jsonheader) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-		Map<String, Object> result = mapper.readValue(jsonheader, MAP_TYPE);
+		Map<String, Object> result = readValue(mapper, jsonheader, MAP_TYPE);
 		this.decodeJSONTableHeader(dt, result);
 		dt.setHeadURL(jsonheader.toExternalForm());
 	}
 
-	@SuppressWarnings("unchecked")
 	private DifficultyTable decodeJSONTableHeader(DifficultyTable dt, Map<String, Object> result) throws IOException {
-		dt.setValues(result);
+		if (result == null || !(result.get("name") instanceof String) || !(result.get("symbol") instanceof String)) {
+			throw new IOException("ヘッダ部の情報が不足しています");
+		}
+		Map<String, Object> values = new HashMap<>(result);
+		if (!(values.get("mode") instanceof String)) {
+			values.remove("mode");
+		}
+		dt.setValues(values);
 		// level_order処理
 		Object dataurl = result.get("data_url");
-		if (dataurl instanceof String) {
-			dt.setDataURL(new String[] { (String) dataurl });
+		dt.setDataURL(new String[0]);
+		if (dataurl instanceof String url) {
+			dt.setDataURL(new String[] { url });
 		}
 		if (dataurl instanceof List<?> list) {
-			dt.setDataURL(list.stream().map(String::valueOf).toArray(String[]::new));
+			dt.setDataURL(list.stream().filter(String.class::isInstance).map(String.class::cast).toArray(String[]::new));
 		}
 		Map<String, Map<String, String>> mergerule = new HashMap<>();
-		List<Map<String, String>> merge = (List<Map<String, String>>) result.get("data_rule");
-		if (merge == null) {
-			merge = new ArrayList<>();
-		}
-		for (int i = 0; i < dt.getDataURL().length; i++) {
-			if (i == merge.size()) {
-				break;
+		if (result.get("data_rule") instanceof List<?> merge) {
+			for (int i = 0; i < Math.min(dt.getDataURL().length, merge.size()); i++) {
+				if (merge.get(i) instanceof Map<?, ?> rule) {
+					Map<String, String> levels = new HashMap<>();
+					for (Map.Entry<?, ?> entry : rule.entrySet()) {
+						if (entry.getKey() instanceof String key && entry.getValue() instanceof String value) {
+							levels.put(key, value);
+						}
+					}
+					mergerule.put(dt.getDataURL()[i], levels);
+				}
 			}
-			mergerule.put(dt.getDataURL()[i], merge.get(i));
 		}
 		dt.setMergeConfigurations(mergerule);
 		List<Course[]> courses = new ArrayList<>();
-		if (result.get("course") != null) {
-			List<List<Map<String, Object>>> courselist = new ArrayList<>();
-			if (((List<?>) result.get("course")).get(0) instanceof List) {
-				courselist = (List<List<Map<String, Object>>>) result.get("course");
-			}
-			if (((List<?>) result.get("course")).get(0) instanceof Map) {
-				courselist.add((List<Map<String, Object>>) result.get("course"));
-			}
-			for (List<Map<String, Object>> course : courselist) {
-				List<Course> l = new ArrayList<>();
-				for (Map<String, Object> grade : course) {
-					Course gr = new Course();
-					gr.setName((String) grade.get("name"));
-					List<BMSTableElement> charts = new ArrayList<>();
-					if(grade.get("charts") != null) {
-						for(Map<String, Object> chart : (List<Map<String, Object>>) grade.get("charts")) {
-							BMSTableElement dte = new DifficultyTableElement();
-							dte.setValues(chart);
-							charts.add(dte);
-						}
-					} else {
-						for(String md5 : (List<String>) grade.get("md5")) {
-							BMSTableElement dte = new DifficultyTableElement();
-							dte.setMD5(md5);
-							charts.add(dte);							
-						}
+		if (result.get("course") instanceof List<?> courseList && !courseList.isEmpty()) {
+			if (courseList.get(0) instanceof List<?>) {
+				for (Object group : courseList) {
+					if (group instanceof List<?> grades) {
+						courses.add(parseCourses(grades, false));
 					}
-					gr.setCharts(charts.toArray(new BMSTableElement[charts.size()]));
-					gr.setStyle((String) grade.get("style"));
-					gr.setConstraint(((List<String>) grade.get("constraint")).toArray(new String[0]));
-					if (grade.get("trophy") != null) {
-						List<Trophy> trophy = new ArrayList<>();
-						for (Map<String, Object> tr : (List<Map<String, Object>>) grade.get("trophy")) {
-							Trophy t = new Trophy();
-							t.setName((String) tr.get("name"));
-							t.setMissrate((double) tr.get("missrate"));
-							t.setScorerate((double) tr.get("scorerate"));
-							t.setStyle((String) tr.get("style"));
-							trophy.add(t);
-						}
-						gr.setTrophy(trophy.toArray(new Trophy[trophy.size()]));
-					}
-					l.add(gr);
 				}
-				courses.add(l.toArray(new Course[l.size()]));
+			} else {
+				courses.add(parseCourses(courseList, false));
 			}
-		} else if (result.get("grade") != null) {
-			List<Course> l = new ArrayList<>();
-			for (Map<String, Object> grade : (List<Map<String, Object>>) result.get("grade")) {
-				Course gr = new Course();
-				gr.setName((String) grade.get("name"));
-				List<BMSTableElement> charts = new ArrayList<>();
-				for(String md5 : (List<String>) grade.get("md5")) {
-					BMSTableElement dte = new DifficultyTableElement();
-					dte.setMD5(md5);
-					charts.add(dte);							
-				}
-				gr.setCharts(charts.toArray(new BMSTableElement[charts.size()]));
-				gr.setStyle((String) grade.get("style"));
-				gr.setConstraint(new String[] { "grade_mirror","gauge_lr2" });
-				l.add(gr);
-			}
-			courses.add(l.toArray(new Course[l.size()]));
+		} else if (result.get("grade") instanceof List<?> grades) {
+			courses.add(parseCourses(grades, true));
 		}
 		dt.setCourse(courses.toArray(new Course[courses.size()][]));
-		// 必須項目が定義されていない場合は例外をスロー
-		if (result.get("name") == null || result.get("symbol") == null) {
-			throw new IOException("ヘッダ部の情報が不足しています", null);
-		}
 		return dt;
+	}
+
+	private Course[] parseCourses(List<?> grades, boolean legacy) {
+		List<Course> courses = new ArrayList<>();
+		for (Object item : grades) {
+			if (!(item instanceof Map<?, ?> grade)) {
+				continue;
+			}
+			Course course = new Course();
+			if (grade.get("name") instanceof String name) course.setName(name);
+			if (grade.get("style") instanceof String style) course.setStyle(style);
+			List<BMSTableElement> charts = new ArrayList<>();
+			if (!legacy && grade.get("charts") instanceof List<?> chartList) {
+				for (Object chart : chartList) {
+					if (chart instanceof Map<?, ?> values) {
+						DifficultyTableElement element = new DifficultyTableElement();
+						element.setValues(stringKeyMap(values));
+						charts.add(element);
+					}
+				}
+			} else if (grade.get("md5") instanceof List<?> hashes) {
+				for (Object hash : hashes) {
+					if (hash instanceof String md5) {
+						DifficultyTableElement element = new DifficultyTableElement();
+						element.setMD5(md5);
+						charts.add(element);
+					}
+				}
+			}
+			course.setCharts(charts.toArray(BMSTableElement[]::new));
+			if (legacy) {
+				course.setConstraint(new String[] { "grade_mirror", "gauge_lr2" });
+			} else {
+				if (grade.get("constraint") instanceof List<?> constraints) {
+					course.setConstraint(constraints.stream().filter(String.class::isInstance)
+							.map(String.class::cast).toArray(String[]::new));
+				}
+				if (grade.get("trophy") instanceof List<?> trophies) {
+					List<Trophy> parsed = new ArrayList<>();
+					for (Object itemTrophy : trophies) {
+						if (itemTrophy instanceof Map<?, ?> values) {
+							Trophy trophy = new Trophy();
+							if (values.get("name") instanceof String name) trophy.setName(name);
+							if (values.get("style") instanceof String style) trophy.setStyle(style);
+							if (values.get("missrate") instanceof Number rate) trophy.setMissrate(rate.doubleValue());
+							if (values.get("scorerate") instanceof Number rate) trophy.setScorerate(rate.doubleValue());
+							parsed.add(trophy);
+						}
+					}
+					course.setTrophy(parsed.toArray(Trophy[]::new));
+				}
+			}
+			courses.add(course);
+		}
+		return courses.toArray(Course[]::new);
+	}
+
+	private Map<String, Object> stringKeyMap(Map<?, ?> values) {
+		Map<String, Object> result = new HashMap<>();
+		for (Map.Entry<?, ?> entry : values.entrySet()) {
+			if (entry.getKey() instanceof String key) result.put(key, entry.getValue());
+		}
+		return result;
 	}
 
 	/**
@@ -365,13 +411,21 @@ public class DifficultyTableParser {
 		// JSON読み込み
 		ObjectMapper mapper = new ObjectMapper();
 		// 難易度表に変換
-		this.decodeJSONTableData(dt, mapper.readValue(jsondata, LIST_MAP_TYPE), false);
+		this.decodeJSONTableData(dt, readValue(mapper, jsondata, LIST_MAP_TYPE), false);
 	}
 
-	private void decodeJSONTableData(DifficultyTable dt, List<Map<String, Object>> result, boolean accept) {
-		dt.removeAllElements();
+	private void decodeJSONTableData(DifficultyTable dt, List<Map<String, Object>> result, boolean accept) throws IOException {
+		if (result == null) {
+			throw new IOException("難易度表データが配列ではありません");
+		}
 		List<String> levelorder = new ArrayList<>();
+		dt.removeAllElements();
 		for (Map<String, Object> m : result) {
+			if (m == null || !stringOrNull(m.get("title")) || !stringOrNull(m.get("mode"))
+					|| !stringOrNull(m.get("md5")) || !stringOrNull(m.get("sha256"))) {
+				Logger.getGlobal().warning("不正な難易度表データ行をスキップします");
+				continue;
+			}
 			// levelとmd5(sha256)が定義されていない要素は弾く
 			if (accept
 					|| (m.get("level") != null && ((m.get("md5") != null && m.get("md5").toString().length() > 24) || (m
@@ -402,6 +456,10 @@ public class DifficultyTableParser {
 		if (dt.getLevelDescription().length == 0) {
 			dt.setLevelDescription(levelorder.toArray(new String[levelorder.size()]));
 		}
+	}
+
+	private boolean stringOrNull(Object value) {
+		return value == null || value instanceof String;
 	}
 
 	/**

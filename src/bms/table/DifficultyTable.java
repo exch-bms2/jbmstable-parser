@@ -36,7 +36,8 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 		Arrays.sort(dte, (dte1, dte2) -> {
 			int c = indexOf(dte1.getLevel()) - indexOf(dte2.getLevel());
 			if (c == 0) {
-				return dte1.getTitle().compareToIgnoreCase(dte2.getTitle());
+				return String.CASE_INSENSITIVE_ORDER.compare(
+						Objects.toString(dte1.getTitle(), ""), Objects.toString(dte2.getTitle(), ""));
 			}
 			return c;
 		});
@@ -57,7 +58,7 @@ public class DifficultyTable extends BMSTable<DifficultyTableElement> implements
 		if (value instanceof List<?> l) {
 			String[] levels = new String[l.size()];
 			for (int i = 0; i < levels.length; i++) {
-				levels[i] = l.get(i).toString();
+				levels[i] = Objects.toString(l.get(i), "");
 			}
 			return levels;
 		}
