@@ -36,6 +36,10 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+tasks.named('jar', Jar) {
+    archiveFileName = 'jbms-parser.jar'
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.release = 17
     options.encoding = 'UTF-8'
