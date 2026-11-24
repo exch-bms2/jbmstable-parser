@@ -156,6 +156,10 @@ public class DifficultyTableParser {
 	}
 
 	private String getAbsoluteURL(String source, String path) throws MalformedURLException {
+		// A table opened by its header URL has no source page; the header URL is already absolute.
+		if (source == null || source.isEmpty()) {
+			return path;
+		}
 		return new URL(new URL(source), path).toExternalForm();
 	}
 
